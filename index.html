@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kiosk Bikes Demo</title>
+  <style>
+    :root{
+      --bg:#f5f5f5;
+      --panel:#ffffff;
+      --panel2:#fbfbfb;
+      --text:#111111;
+      --muted:#5f5f5f;
+      --line:rgba(0,0,0,.12);
+      --line2:rgba(0,0,0,.08);
+      --shadow:0 14px 34px rgba(0,0,0,.10);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+      overflow:hidden; /* kiosk feel */
+    }
+    button,input{font:inherit}
+    .app{height:100%;display:flex;flex-direction:column}
+
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 20px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.86));
+      backdrop-filter:blur(8px);
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background:#111;box-shadow:var(--shadow);
+      display:grid;place-items:center;color:#fff;font-weight:900;letter-spacing:.5px;
+    }
+    .title{display:flex;flex-direction:column;line-height:1.15}
+    .title b{font-size:18px}
+    .title span{font-size:13px;color:var(--muted)}
+    .top-actions{display:flex;align-items:center;gap:10px}
+
+    .pill{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 12px;border:1px solid var(--line);
+      border-radius:999px;background:rgba(0,0,0,.03);color:var(--muted);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;background:#111;
+      box-shadow:0 0 0 4px rgba(0,0,0,.08)
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.03);
+      color:var(--text);
+      padding:12px 14px;border-radius:14px;
+      cursor:pointer;user-select:none;
+      transition:transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:active{transform:scale(.99)}
+    .btn.primary{background:#111;color:#fff;border-color:transparent;font-weight:900}
+    .btn.ghost{background:transparent}
+    .btn.danger{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.18);color:#111}
+
+    .content{
+      flex:1;display:grid;
+      grid-template-columns:1.25fr .85fr;
+      gap:14px;padding:14px;min-height:0;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,251,251,.92));
+      border:1px solid var(--line2);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;min-height:0;
+    }
+    .card-header{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid var(--line2);
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    }
+    .card-header h2{margin:0;font-size:18px}
+    .card-header p{margin:6px 0 0 0;font-size:13px;color:var(--muted);max-width:70ch}
+    .card-body{padding:12px 14px;min-height:0}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .tile{
+      padding:14px;border-radius:16px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+    }
+    .tile b{display:block;font-size:14px;margin-bottom:8px}
+    .tile .big{font-size:26px;font-weight:1000}
+    .muted{color:var(--muted)}
+    .divider{height:1px;background:var(--line2);margin:12px 0}
+
+    .k-input{
+      width:100%;
+      padding:12px 14px;border-radius:14px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+      color:var(--text);
+      outline:none;
+    }
+    .k-input::placeholder{color:rgba(17,17,17,.40)}
+
+    .filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chip{
+      padding:10px 12px;border-radius:999px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+      color:var(--muted);
+      cursor:pointer;user-select:none;
+      transition:background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .chip.active{background:rgba(0,0,0,.10);border-color:rgba(0,0,0,.22);color:#111}
+
+    .list{
+      margin-top:12px;display:flex;flex-direction:column;gap:10px;
+      max-height:55vh;overflow:auto;padding-right:6px;
+    }
+    .rowcard{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:14px;border-radius:16px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+      cursor:pointer;
+    }
+    .row-left{display:flex;gap:12px;align-items:center;min-width:0}
+    .badge{
+      width:44px;height:44px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(0,0,0,.08);
+      border:1px solid rgba(0,0,0,.14);
+      color:#111;font-weight:1000;flex:0 0 auto;
+    }
+    .rowmeta{min-width:0}
+    .rowmeta b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38ch}
+    .rowmeta span{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+
+    .stats{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .stat{
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.03);
+      color:var(--muted);
+      font-size:12px;
+      display:flex;gap:8px;align-items:center;
+    }
+    .stat .k{color:#111}
+
+    .bar{
+      height:10px;width:86px;border-radius:999px;
+      background:rgba(0,0,0,.06);
+      overflow:hidden;border:1px solid var(--line2);
+    }
+    .bar>div{height:100%;background:#111}
+
+    .map{
+      height:42vh;border-radius:18px;border:1px solid var(--line2);
+      background:
+        radial-gradient(260px 220px at 22% 30%, rgba(0,0,0,.05), transparent 60%),
+        radial-gradient(240px 200px at 70% 55%, rgba(0,0,0,.04), transparent 65%),
+        linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.015));
+      position:relative;overflow:hidden;
+    }
+    .pin{
+      position:absolute;transform:translate(-50%,-50%);
+      width:16px;height:16px;border-radius:999px;
+      background:#111;
+      box-shadow:0 0 0 6px rgba(0,0,0,.08);
+      border:1px solid rgba(255,255,255,.65);
+    }
+    .pin.dim{opacity:.40}
+    .map-label{
+      position:absolute;left:14px;bottom:14px;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid var(--line2);
+      background:rgba(255,255,255,.86);
+      color:var(--muted);
+      max-width:60ch;
+    }
+
+    .summary{display:flex;flex-direction:column;gap:12px}
+    .bigcta{
+      padding:14px;border-radius:18px;
+      border:1px solid rgba(0,0,0,.12);
+      background:rgba(0,0,0,.02);
+    }
+    .bigcta h3{margin:0 0 6px 0}
+    .bigcta .muted{font-size:13px}
+
+    .footer{
+      padding:10px 18px;border-top:1px solid var(--line2);
+      background:rgba(255,255,255,.85);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      color:var(--muted);font-size:12px;
+    }
+    .kbd{
+      padding:4px 8px;border-radius:10px;border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);color:var(--text);font-weight:800;font-size:11px;
+    }
+
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.45);
+      display:none;align-items:center;justify-content:center;padding:18px;
+    }
+    .modal{
+      width:min(760px, 96vw);
+      border-radius:22px;border:1px solid var(--line2);
+      background:var(--panel);box-shadow:var(--shadow);overflow:hidden;
+    }
+    .modal .card-body{padding:18px}
+
+    /* Payment UI */
+    .pay-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+    .pay-methods{display:flex;gap:10px;flex-wrap:wrap}
+    .method{
+      padding:10px 12px;border-radius:999px;
+      border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+      color:var(--muted);
+      cursor:pointer;user-select:none;
+    }
+    .method.active{background:rgba(0,0,0,.10);border-color:rgba(0,0,0,.20);color:#111}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .key{
+      padding:16px 0;text-align:center;
+      border-radius:16px;border:1px solid var(--line2);
+      background:rgba(0,0,0,.02);
+      color:#111;font-weight:900;cursor:pointer;user-select:none;
+    }
+    .key:active{transform:scale(.99)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;}
+
+    /* Language chooser - always visible, no scroll */
+    #langRoot{
+      position:fixed;inset:0;z-index:99999;
+      display:flex;align-items:center;justify-content:center;
+      padding:12px;overflow:hidden;background:var(--bg);
+    }
+    .lang-card{
+      width:min(720px,96vw);
+      max-height:calc(100vh - 24px);
+      background:var(--panel);
+      border:1px solid var(--line2);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .lang-head{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line2);
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+    }
+    .lang-body{padding:12px 14px}
+    .lang-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .lang-choice{
+      padding:14px;border-radius:16px;
+      border:1px solid var(--line2);
+      background:var(--panel2);
+      cursor:pointer;
+    }
+    .lang-choice b{font-size:16px;display:block}
+    .lang-choice span{display:block;margin-top:6px;color:var(--muted);font-size:12px}
+
+    /* --- FULLSCREEN MAINTENANCE (only white + text) --- */
+    .maint-fullscreen{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      background:#ffffff;
+      display:none;
+      align-items:center;
+      justify-content:center;
+    }
+    .maint-fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  background:#ffffff;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+.maint-stack{
+  position:relative;
+  transform:rotate(-12deg); /* diagonal */
+  user-select:none;
+}
+
+.maint-stack .msg{
+  font-size:clamp(64px, 6vw, 110px); /* más grande */
+  font-weight:1000;
+  color:#111;
+  letter-spacing:1.2px;
+  white-space:nowrap;
+  line-height:1.02;
+  text-transform:uppercase;
+}
+
+
+/* three lines, slightly offset for a “diagonal stack” look */
+.maint-stack .msg:nth-child(1){ transform:translate(0px, 0px); opacity:1; }
+.maint-stack .msg:nth-child(2){ transform:translate(18px, 18px); opacity:.92; }
+.maint-stack .msg:nth-child(3){ transform:translate(36px, 36px); opacity:.84; }
+
+  </style>
+</head>
+
+<body>
+  <div class="app" id="appRoot">
+    <div class="topbar" id="topbar">
+      <div class="brand">
+        <div class="logo">BK</div>
+        <div class="title">
+          <b id="brandTitle">Bikes Kiosk</b>
+          <span id="brandSub">Demo local (kiosko)</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="pill"><span class="dot"></span><span id="netText">Online</span></div>
+        <button class="btn ghost" id="btnLang">ES</button>
+        <button class="btn ghost" id="btnHome">Inicio</button>
+        <button class="btn" id="btnHelp">Ayuda</button>
+        <button class="btn danger" id="btnAdmin">Admin</button>
+      </div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 id="leftTitle">—</h2>
+            <p id="leftDesc">—</p>
+          </div>
+          <div id="leftActions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+            <button class="btn" id="btnPlan">Planes</button>
+            <button class="btn primary" id="btnStart">Empezar</button>
+          </div>
+        </div>
+        <div class="card-body" id="leftBody"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 id="rightTitle">Resumen</h2>
+            <p id="rightDesc">—</p>
+          </div>
+          <button class="btn" id="btnReset">Reiniciar</button>
+        </div>
+        <div class="card-body" id="rightBody"></div>
+      </div>
+    </div>
+
+    <div class="footer" id="footer">
+      <div id="hintText">Atajos: <span class="kbd">Esc</span> volver · <span class="kbd">F5</span> refrescar</div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="card-header">
+        <div>
+          <h2 id="modalTitle">Título</h2>
+          <p id="modalDesc">Descripción</p>
+        </div>
+        <button class="btn danger" id="modalClose">Cerrar</button>
+      </div>
+      <div class="card-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Language overlay (in DOM by default, so it always shows) -->
+  <div id="langRoot">
+    <div class="lang-card" role="dialog" aria-modal="true">
+      <div class="lang-head">
+        <div class="brand">
+          <div class="logo">BK</div>
+          <div class="title">
+            <b>Bikes Kiosk</b>
+            <span>Demo local (kiosko) / Local demo (kiosk)</span>
+          </div>
+        </div>
+        <button class="btn ghost" onclick="toggleOnline()">◉</button>
+      </div>
+      <div class="lang-body">
+        <h2 style="margin:0; font-size:18px">Selecciona idioma / Choose language</h2>
+        <p class="muted" style="margin:6px 0 0 0; font-size:13px">Elige el idioma antes de comenzar. / Pick a language before starting.</p>
+        <div class="lang-choices">
+          <div class="lang-choice" onclick="setLang('es')">
+            <b>Español</b>
+            <span>Interfaz en español</span>
+          </div>
+          <div class="lang-choice" onclick="setLang('en')">
+            <b>English</b>
+            <span>English interface</span>
+          </div>
+        </div>
+        <div style="margin-top:10px" class="muted">Estado / Status: <b id="langNet" style="color:#111">Online</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN MAINTENANCE SCREEN -->
+  <div class="maint-fullscreen" id="maintScreen" aria-live="assertive">
+  <div class="maint-stack" aria-hidden="true">
+    <div class="msg">Hacked by @Ed</div>
+    <div class="msg">Hacked by @Ed</div>
+    <div class="msg">Hacked by @Ed</div>
+  </div>
+</div>
+
+
+<script>
+  // ---------- i18n ----------
+  const STR = {
+    es: {
+      brandSub:"Demo local (kiosko)",
+      home:"Inicio", help:"Ayuda", plans:"Planes", start:"Empezar", reset:"Reiniciar",
+      summary:"Resumen",
+      shortcuts:'Atajos: <span class="kbd">Esc</span> volver · <span class="kbd">F5</span> refrescar',
+      welcomeTitle:"Bienvenido",
+      welcomeDesc:"Selecciona un plan, realiza el pago (demo) y elige una estación.",
+      planSelected:"Plan seleccionado",
+      status:"Estado",
+      online:"Online", offline:"Offline",
+      simulateOnline:"Simular offline/online",
+      chooseStation:"Elegir estación",
+      plansTitle:"Planes",
+      plansDesc:"Elige una tarifa. (Demo: pago simulado.)",
+      price:"Precio",
+      selected:"Seleccionado",
+      back:"Volver",
+      continueToPay:"Ir a pagar",
+      payTitle:"Pago",
+      payDesc:"Introduce un método de pago y confirma. (Simulación)",
+      method:"Método",
+      card:"Tarjeta",
+      contactless:"Contactless",
+      qr:"QR",
+      amount:"Importe",
+      cardNumber:"Número de tarjeta",
+      enterDigits:"Introduce 16 dígitos (demo)",
+      confirmPay:"Pagar",
+      paymentOK:"Pago aprobado",
+      paymentOKDesc:"Operación completada (demo).",
+      stationsTitle:"Elige estación",
+      stationsDesc:"Busca una estación, filtra por disponibilidad y confirma.",
+      searchPh:"Buscar estación (nombre, zona o id)…",
+      all:"Todas",
+      withBikes:"Con bicis",
+      nearest:"Más cercanas",
+      center:"Centro",
+      confirmTitle:"Confirmar",
+      confirmDesc:"Revisa plan y estación. Genera un código de desbloqueo (demo).",
+      station:"Estación",
+      plan:"Plan",
+      total:"Total",
+      changeStation:"Cambiar estación",
+      generateCode:"Generar código",
+      unlockTitle:"Desbloqueo",
+      unlockDesc:"Código temporal generado. (Demo)",
+      validity:"Validez",
+      expiresIn:"Expira en",
+      finish:"Finalizar",
+      regenerate:"Regenerar",
+      missingStation:"Falta estación",
+      missingStationDesc:"Selecciona una estación antes de generar un código.",
+      goStations:"Ir a estaciones",
+      noBikes:"Sin bicis disponibles",
+      noBikesDesc:"Esta estación no tiene bicis ahora mismo (demo).",
+      offlineMode:"Modo offline",
+      offlineModeDesc:"Sin conexión: operación limitada (demo).",
+      understood:"Entendido",
+      retryOnline:"Reintentar online",
+      codeExpired:"Código caducado",
+      codeExpiredDesc:"El código expiró (demo).",
+      regenerateNow:"Regenerar",
+      mapDemo:"Mapa (demo)",
+      mapNote:"Vista simbólica (sin mapas reales). Puntos muestran estaciones cercanas/filtradas.",
+      progress:"Progreso",
+      screen:"Pantalla",
+      selectAStation:"Selecciona una estación",
+      touchAStation:"Toca una estación en la lista para ver detalles aquí.",
+
+      // Admin
+      admin:"Admin",
+      adminTitle:"Acceso administrador",
+      adminDesc:"Introduce PIN para opciones de mantenimiento.",
+      pin:"PIN",
+      enterPin:"Introduce PIN (4–8 dígitos)",
+      unlock:"Entrar",
+      locked:"Bloqueado",
+      lockedDesc:"Demasiados intentos. Espera un momento.",
+      maintenance:"Mantenimiento",
+      exitTo:"Salir a",
+      reload:"Recargar",
+      resetKiosk:"Reiniciar demo",
+      cancel:"Cancelar",
+      badPin:"PIN incorrecto",
+    },
+    en: {
+      brandSub:"Local demo (kiosk)",
+      home:"Home", help:"Help", plans:"Plans", start:"Start", reset:"Reset",
+      summary:"Summary",
+      shortcuts:'Shortcuts: <span class="kbd">Esc</span> back · <span class="kbd">F5</span> refresh',
+      welcomeTitle:"Welcome",
+      welcomeDesc:"Pick a plan, pay (demo), then choose a station.",
+      planSelected:"Selected plan",
+      status:"Status",
+      online:"Online", offline:"Offline",
+      simulateOnline:"Toggle offline/online",
+      chooseStation:"Choose station",
+      plansTitle:"Plans",
+      plansDesc:"Choose a plan. (Simulated payment.)",
+      price:"Price",
+      selected:"Selected",
+      back:"Back",
+      continueToPay:"Go to pay",
+      payTitle:"Payment",
+      payDesc:"Select payment method and confirm. (Simulation)",
+      method:"Method",
+      card:"Card",
+      contactless:"Contactless",
+      qr:"QR",
+      amount:"Amount",
+      cardNumber:"Card number",
+      enterDigits:"Enter 16 digits (demo)",
+      confirmPay:"Pay",
+      paymentOK:"Payment approved",
+      paymentOKDesc:"Done (demo).",
+      stationsTitle:"Choose station",
+      stationsDesc:"Search, filter, and confirm.",
+      searchPh:"Search station (name, area, or id)…",
+      all:"All",
+      withBikes:"With bikes",
+      nearest:"Nearest",
+      center:"Center",
+      confirmTitle:"Confirm",
+      confirmDesc:"Review plan and station. Generate unlock code (demo).",
+      station:"Station",
+      plan:"Plan",
+      total:"Total",
+      changeStation:"Change station",
+      generateCode:"Generate code",
+      unlockTitle:"Unlock",
+      unlockDesc:"Temporary code generated. (Demo)",
+      validity:"Validity",
+      expiresIn:"Expires in",
+      finish:"Finish",
+      regenerate:"Regenerate",
+      missingStation:"No station selected",
+      missingStationDesc:"Select a station before generating a code.",
+      goStations:"Go to stations",
+      noBikes:"No bikes available",
+      noBikesDesc:"This station has no bikes right now (demo).",
+      offlineMode:"Offline mode",
+      offlineModeDesc:"No connection: limited operation (demo).",
+      understood:"OK",
+      retryOnline:"Retry online",
+      codeExpired:"Code expired",
+      codeExpiredDesc:"The code expired (demo).",
+      regenerateNow:"Regenerate",
+      mapDemo:"Map (demo)",
+      mapNote:"Symbolic view (no real map). Dots show nearby/filtered stations.",
+      progress:"Progress",
+      screen:"Screen",
+      selectAStation:"Select a station",
+      touchAStation:"Tap a station in the list to see details here.",
+
+      // Admin
+      admin:"Admin",
+      adminTitle:"Administrator access",
+      adminDesc:"Enter PIN for maintenance options.",
+      pin:"PIN",
+      enterPin:"Enter PIN (4–8 digits)",
+      unlock:"Unlock",
+      locked:"Locked",
+      lockedDesc:"Too many attempts. Please wait.",
+      maintenance:"Maintenance",
+      exitTo:"Exit to",
+      reload:"Reload",
+      resetKiosk:"Reset demo",
+      cancel:"Cancel",
+      badPin:"Wrong PIN",
+    }
+  };
+
+  const PLANS = [
+    { id:"basic",  name_es:"Ocasional", name_en:"Occasional", price:0,  desc_es:"Uso puntual. Pago por trayecto (demo).", desc_en:"Pay-as-you-go (demo)." },
+    { id:"monthly",name_es:"Mensual",   name_en:"Monthly",    price:10, desc_es:"Incluye 60 min/día. Ideal commuting (demo).", desc_en:"Includes 60 min/day (demo)." },
+    { id:"annual", name_es:"Anual",     name_en:"Annual",     price:35, desc_es:"Mejor precio. Incluye 90 min/día (demo).", desc_en:"Best value, 90 min/day (demo)." },
+  ];
+
+  const STATIONS = [
+    { id:101, name:"Sol — Plaza Mayor", area_es:"Centro",  area_en:"Center",  bikes:6, docks:14, distance:0.4, x:22, y:34 },
+    { id:102, name:"Gran Vía — Callao", area_es:"Centro",  area_en:"Center",  bikes:1, docks:19, distance:0.7, x:35, y:28 },
+    { id:103, name:"Atocha — Estación", area_es:"Retiro",  area_en:"Retiro",  bikes:9, docks:7,  distance:1.1, x:44, y:58 },
+    { id:104, name:"Retiro — Alcalá",   area_es:"Retiro",  area_en:"Retiro",  bikes:0, docks:22, distance:1.6, x:55, y:52 },
+    { id:105, name:"Malasaña — Tribunal", area_es:"Centro",area_en:"Center",  bikes:4, docks:12, distance:1.3, x:28, y:18 },
+    { id:106, name:"Moncloa — Intercambiador", area_es:"Moncloa", area_en:"Moncloa", bikes:8, docks:6, distance:3.1, x:16, y:66 },
+    { id:107, name:"Argüelles — Princesa", area_es:"Moncloa", area_en:"Moncloa", bikes:2, docks:18, distance:2.5, x:18, y:52 },
+    { id:108, name:"Lavapiés — Embajadores", area_es:"Centro", area_en:"Center", bikes:5, docks:10, distance:1.9, x:48, y:68 },
+  ];
+
+  const state = {
+    lang: null,               // "es" | "en"
+    screen: "welcome",        // welcome | plans | pay | stations | confirm | unlock | maintenance
+    plan: PLANS[0],
+    paid: false,
+    payMethod: "card",        // card | contactless | qr
+    cardDigits: "",
+    query: "",
+    filter: "all",
+    selectedStation: null,
+    online: true,
+    unlockCode: null,
+    unlockEndsAt: null
+  };
+
+  // DOM
+  const brandSub = document.getElementById("brandSub");
+  const netText = document.getElementById("netText");
+  const btnLang = document.getElementById("btnLang");
+  const btnHome = document.getElementById("btnHome");
+  const btnHelp = document.getElementById("btnHelp");
+  const btnAdmin = document.getElementById("btnAdmin");
+  const btnStart = document.getElementById("btnStart");
+  const btnPlan = document.getElementById("btnPlan");
+  const btnReset = document.getElementById("btnReset");
+
+  const leftTitle = document.getElementById("leftTitle");
+  const leftDesc = document.getElementById("leftDesc");
+  const leftBody = document.getElementById("leftBody");
+
+  const rightTitle = document.getElementById("rightTitle");
+  const rightDesc = document.getElementById("rightDesc");
+  const rightBody = document.getElementById("rightBody");
+
+  const hintText = document.getElementById("hintText");
+  const clockEl = document.getElementById("clock");
+
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalDesc  = document.getElementById("modalDesc");
+  const modalBody  = document.getElementById("modalBody");
+  const modalClose = document.getElementById("modalClose");
+
+  const langRoot = document.getElementById("langRoot");
+  const langNet  = document.getElementById("langNet");
+
+  // Maintenance overlay + app sections
+  const topbarEl = document.getElementById("topbar");
+  const mainContentEl = document.getElementById("mainContent");
+  const footerEl = document.getElementById("footer");
+  const maintScreen = document.getElementById("maintScreen");
+
+  function t(key){
+    const L = state.lang || "es";
+    return (STR[L] && STR[L][key]) ? STR[L][key] : key;
+  }
+  const fmtEUR = (n) => `${n}€`;
+  const clamp = (v,min,max) => Math.max(min, Math.min(max,v));
+  const pct = (v,max) => clamp(Math.round((v/max)*100),0,100);
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
+
+  function planName(p){ return state.lang==="en" ? p.name_en : p.name_es; }
+  function planDesc(p){ return state.lang==="en" ? p.desc_en : p.desc_es; }
+  function areaName(s){ return state.lang==="en" ? s.area_en : s.area_es; }
+
+  function stationStatusLabel(s){
+    if(s.bikes===0) return {txt: state.lang==="en" ? "No bikes" : "Sin bicis"};
+    if(s.bikes<=2) return {txt: state.lang==="en" ? "Low" : "Pocas"};
+    return {txt: state.lang==="en" ? "Available" : "Disponible"};
+  }
+
+  function setOnline(v){
+    state.online = v;
+    netText.textContent = v ? t("online") : t("offline");
+    langNet.textContent = v ? "Online" : "Offline";
+  }
+
+  function openModal(title, desc, bodyHTML){
+    modalTitle.textContent = title;
+    modalDesc.textContent = desc;
+    modalBody.innerHTML = bodyHTML;
+    modalBackdrop.style.display = "flex";
+  }
+  function closeModal(){ modalBackdrop.style.display = "none"; }
+
+  function genUnlockCode(){
+    const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let out=""; for(let i=0;i<6;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+    return out;
+  }
+
+  function computeStations(){
+    const q = state.query.trim().toLowerCase();
+    let list = STATIONS.slice();
+
+    if(state.filter==="available") list = list.filter(s=>s.bikes>0);
+    if(state.filter==="center"){
+      list = list.filter(s=> areaName(s).toLowerCase()===(state.lang==="en" ? "center" : "centro"));
+    }
+    if(q){
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        areaName(s).toLowerCase().includes(q) ||
+        String(s.id).includes(q)
+      );
+    }
+    list.sort((a,b)=>a.distance-b.distance);
+    return list;
+  }
+
+  function progressPct(){
+    const order=["welcome","plans","pay","stations","confirm","unlock","maintenance"];
+    const idx=Math.max(0,order.indexOf(state.screen));
+    return Math.round(((idx+1)/order.length)*100);
+  }
+
+  // ---------- Maintenance mode: hides the app UI completely ----------
+  function applyMaintenanceMode(on){
+    topbarEl.style.display = on ? "none" : "";
+    mainContentEl.style.display = on ? "none" : "";
+    footerEl.style.display = on ? "none" : "";
+    langRoot.style.display = on ? "none" : (state.lang ? "none" : "flex");
+
+    maintScreen.style.display = on ? "flex" : "none";
+    document.documentElement.style.background = on ? "#fff" : "";
+    document.body.style.background = on ? "#fff" : "";
+  }
+
+  // ---------- Admin ----------
+  const ADMIN = {
+    pin: "2749",        // <-- PIN aquí
+    maxAttempts: 5,
+    cooldownMs: 30_000,
+    attempts: 0,
+    lockedUntil: 0,
+  };
+
+  function isLocked(){ return Date.now() < ADMIN.lockedUntil; }
+
+  function openAdminModal(){
+    if(isLocked()){
+      openModal(t("locked"), t("lockedDesc"), `
+        <div class="muted" style="margin-bottom:12px">${escapeHtml(t("lockedDesc"))}</div>
+        <div class="filters">
+          <div class="chip active" onclick="closeModal()">${t("understood")}</div>
+        </div>
+      `);
+      return;
+    }
+
+    openModal(t("adminTitle"), t("adminDesc"), `
+      <div class="tile">
+        <b>${t("pin")}</b>
+        <input id="adminPin" class="k-input mono" inputmode="numeric" autocomplete="off"
+               placeholder="${escapeHtml(t("enterPin"))}" maxlength="8" />
+        <div class="divider"></div>
+        <div class="filters">
+          <button class="btn primary" onclick="submitAdminPin()">${t("unlock")}</button>
+          <div class="chip" onclick="closeModal()">${t("cancel")}</div>
+        </div>
+      </div>
+    `);
+    setTimeout(()=>document.getElementById("adminPin")?.focus(), 0);
+  }
+
+  function submitAdminPin(){
+    if(isLocked()){
+      closeModal();
+      return;
+    }
+    const entered = (document.getElementById("adminPin")?.value || "").trim();
+
+    if(entered !== ADMIN.pin){
+      ADMIN.attempts += 1;
+
+      if(ADMIN.attempts >= ADMIN.maxAttempts){
+        ADMIN.lockedUntil = Date.now() + ADMIN.cooldownMs;
+        ADMIN.attempts = 0;
+        openModal(t("locked"), t("lockedDesc"), `
+          <div class="muted" style="margin-bottom:12px">${escapeHtml(t("lockedDesc"))}</div>
+          <div class="filters"><div class="chip active" onclick="closeModal()">${t("understood")}</div></div>
+        `);
+        return;
+      }
+
+      openModal(t("adminTitle"), t("badPin"), `
+        <div class="muted" style="margin-bottom:12px">${escapeHtml(t("badPin"))}</div>
+        <div class="filters">
+          <button class="btn primary" onclick="closeModal(); openAdminModal()">${state.lang==="en" ? "Try again" : "Reintentar"}</button>
+          <div class="chip" onclick="closeModal()">${t("cancel")}</div>
+        </div>
+      `);
+      return;
+    }
+
+    ADMIN.attempts = 0;
+
+    openModal(t("maintenance"), state.lang==="en" ? "Choose an admin action (demo)." : "Elige una acción (demo).", `
+      <div class="tile">
+        <div class="filters" style="justify-content:flex-start">
+          <button class="btn" onclick="closeModal(); resetAll();">${t("resetKiosk")}</button>
+          <button class="btn" onclick="location.reload();">${t("reload")}</button>
+          <button class="btn danger" onclick="closeModal(); go('maintenance');">${t("exitTo")} ${state.lang==="en" ? "Maintenance" : "Mantenimiento"}</button>
+        </div>
+        <div class="divider"></div>
+        <div class="filters">
+          <div class="chip active" onclick="closeModal()">${state.lang==="en" ? "Close" : "Cerrar"}</div>
+        </div>
+      </div>
+    `);
+  }
+
+  function render(){
+    // If maintenance is on, do not render app UI (it's hidden anyway)
+    if(state.screen === "maintenance") return;
+
+    // Top chrome texts
+    brandSub.textContent = t("brandSub");
+    btnHome.textContent = t("home");
+    btnHelp.textContent = t("help");
+    btnPlan.textContent = t("plans");
+    btnStart.textContent = t("start");
+    btnReset.textContent = t("reset");
+    btnAdmin.textContent = t("admin");
+    rightTitle.textContent = t("summary");
+    rightDesc.textContent = state.selectedStation ? `${areaName(state.selectedStation)} · ${state.selectedStation.distance} km` : "—";
+    hintText.innerHTML = t("shortcuts");
+    btnLang.textContent = state.lang ? state.lang.toUpperCase() : "ES";
+    netText.textContent = state.online ? t("online") : t("offline");
+
+    renderLeft();
+    renderRight();
+  }
+
+  function renderLeft(){
+    if(state.screen==="welcome"){
+      leftTitle.textContent=t("welcomeTitle");
+      leftDesc.textContent=t("welcomeDesc");
+      leftBody.innerHTML=`
+        <div class="grid2">
+          <div class="tile">
+            <b>${t("planSelected")}</b>
+            <div class="big">${escapeHtml(planName(state.plan))}</div>
+            <div class="muted">${escapeHtml(planDesc(state.plan))}</div>
+          </div>
+          <div class="tile">
+            <b>${t("status")}</b>
+            <div class="big">${state.online ? t("online") : t("offline")}</div>
+            <div class="muted">${state.paid ? (state.lang==="en" ? "✓ Paid (demo)" : "✓ Pagado (demo)") : (state.lang==="en" ? "Not paid" : "No pagado")}</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="bigcta">
+          <h3>${t("plansTitle")} → ${t("payTitle")} → ${t("stationsTitle")}</h3>
+          <div class="muted">${state.lang==="en"
+            ? "Pick a plan, press Pay, then choose a station."
+            : "Elige un plan, pulsa Pagar y luego selecciona estación."}</div>
+          <div class="filters">
+            <div class="chip" onclick="toggleOnline()">${t("simulateOnline")}</div>
+            <div class="chip active" onclick="go('plans')">${t("plans")}</div>
+            <div class="chip" onclick="go('pay')">${t("payTitle")}</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if(state.screen==="plans"){
+      leftTitle.textContent=t("plansTitle");
+      leftDesc.textContent=t("plansDesc");
+      leftBody.innerHTML=`
+        <div class="list" style="max-height:64vh">
+          ${PLANS.map(p=>`
+            <div class="rowcard" onclick="selectPlan('${p.id}')">
+              <div class="row-left">
+                <div class="badge">P</div>
+                <div class="rowmeta">
+                  <b>${escapeHtml(planName(p))}</b>
+                  <span>${escapeHtml(planDesc(p))}</span>
+                </div>
+              </div>
+              <div class="stats">
+                <div class="stat"><span class="k">${t("price")}</span> ${fmtEUR(p.price)}</div>
+                ${state.plan.id===p.id ? `<div class="stat"><span class="k">✓</span> ${t("selected")}</div>`:""}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="divider"></div>
+        <div class="filters">
+          <div class="chip" onclick="go('welcome')">${t("back")}</div>
+          <div class="chip active" onclick="go('pay')">${t("continueToPay")}</div>
+        </div>
+      `;
+      return;
+    }
+
+    if(state.screen==="pay"){
+      leftTitle.textContent=t("payTitle");
+      leftDesc.textContent=t("payDesc");
+
+      const masked = state.cardDigits.replace(/\d(?=\d{4})/g,"•").replace(/(.{4})/g,"$1 ").trim();
+      const canPay = state.plan.price===0 ? true : (state.payMethod!=="card" || state.cardDigits.length===16);
+
+      leftBody.innerHTML=`
+        <div class="pay-grid">
+          <div class="tile">
+            <b>${t("amount")}</b>
+            <div class="big">${fmtEUR(state.plan.price)}</div>
+            <div class="muted">${escapeHtml(planName(state.plan))} · ${escapeHtml(planDesc(state.plan))}</div>
+
+            <div class="divider"></div>
+
+            <b>${t("method")}</b>
+            <div class="pay-methods" style="margin-top:10px">
+              ${payMethodChip("card", t("card"))}
+              ${payMethodChip("contactless", t("contactless"))}
+              ${payMethodChip("qr", t("qr"))}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="muted">${t("cardNumber")}: <span class="mono" style="color:#111">${masked || "•••• •••• •••• ••••"}</span></div>
+            <div class="muted" style="margin-top:8px">${state.plan.price===0
+              ? (state.lang==="en" ? "Free plan: you can pay immediately." : "Plan gratuito: puedes pagar directamente.")
+              : (state.lang==="en" ? "Enter digits on the keypad (demo)." : "Introduce dígitos con el teclado (demo).")}</div>
+
+            <div class="divider"></div>
+
+            <div class="filters">
+              <div class="chip" onclick="go('plans')">${t("back")}</div>
+              <button class="btn primary" onclick="confirmPayment()" ${canPay ? "" : "disabled"}>${t("confirmPay")}</button>
+            </div>
+          </div>
+
+          <div class="tile">
+            <b>${t("cardNumber")}</b>
+            <div class="muted" style="margin-top:8px">${t("enterDigits")}</div>
+            <div class="divider"></div>
+            <div class="mono" style="font-size:18px; letter-spacing:2px">${masked || "•••• •••• •••• ••••"}</div>
+
+            <div class="keypad">
+              ${[1,2,3,4,5,6,7,8,9].map(n=>`<div class="key" onclick="keyPress('${n}')">${n}</div>`).join("")}
+              <div class="key" onclick="keyPress('del')">⌫</div>
+              <div class="key" onclick="keyPress('0')">0</div>
+              <div class="key" onclick="keyPress('clr')">C</div>
+            </div>
+
+            <div class="divider"></div>
+            <div class="filters">
+              <div class="chip" onclick="go('stations')">${t("chooseStation")}</div>
+              <div class="chip" onclick="go('welcome')">${t("home")}</div>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if(state.screen==="stations"){
+      const list=computeStations();
+      leftTitle.textContent=t("stationsTitle");
+      leftDesc.textContent=t("stationsDesc");
+      leftBody.innerHTML=`
+        <input class="k-input" placeholder="${escapeHtml(t("searchPh"))}" value="${escapeHtml(state.query)}"
+               oninput="setQuery(this.value)" />
+        <div class="filters">
+          ${chip("all", t("all"))}
+          ${chip("available", t("withBikes"))}
+          ${chip("nearest", t("nearest"))}
+          ${chip("center", t("center"))}
+        </div>
+        <div class="list">
+          ${list.map(s=>stationRow(s)).join("")}
+        </div>
+        <div class="divider"></div>
+        <div class="filters">
+          <div class="chip" onclick="go('pay')">${t("back")}</div>
+          <div class="chip" onclick="go('welcome')">${t("home")}</div>
+        </div>
+      `;
+      return;
+    }
+
+    if(state.screen==="confirm"){
+      const s=state.selectedStation;
+      leftTitle.textContent=t("confirmTitle");
+      leftDesc.textContent=t("confirmDesc");
+      leftBody.innerHTML=`
+        <div class="grid2">
+          <div class="tile">
+            <b>${t("station")}</b>
+            <div class="big" style="font-size:20px">${s ? escapeHtml(s.name) : "—"}</div>
+            <div class="muted">${s ? `${areaName(s)} · ${s.distance} km` : ""}</div>
+          </div>
+          <div class="tile">
+            <b>${t("plan")}</b>
+            <div class="big">${escapeHtml(planName(state.plan))}</div>
+            <div class="muted">${t("total")}: <b style="color:#111">${fmtEUR(state.plan.price)}</b> (demo)</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="bigcta">
+          <h3>${t("generateCode")}</h3>
+          <div class="muted">${state.lang==="en"
+            ? "Simulated unlock step. Normally validated by backend."
+            : "Paso simulado. Normalmente validado por backend."}</div>
+          <div class="filters">
+            <div class="chip" onclick="go('stations')">${t("changeStation")}</div>
+            <button class="btn primary" onclick="startUnlock()">${t("generateCode")}</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if(state.screen==="unlock"){
+      leftTitle.textContent=t("unlockTitle");
+      leftDesc.textContent=t("unlockDesc");
+      const remain=Math.max(0,Math.floor((state.unlockEndsAt-Date.now())/1000));
+      leftBody.innerHTML=`
+        <div class="grid2">
+          <div class="tile">
+            <b>${t("station")}</b>
+            <div class="big" style="font-size:18px">${escapeHtml(state.selectedStation?.name || "—")}</div>
+            <div class="muted">${state.selectedStation ? `${areaName(state.selectedStation)} · ${state.selectedStation.distance} km` : ""}</div>
+          </div>
+          <div class="tile">
+            <b>${t("validity")}</b>
+            <div class="big">${remain}s</div>
+            <div class="muted">${t("expiresIn")} ${remain}s</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap">
+          <div class="tile" style="min-width:260px">
+            <b>${state.lang==="en" ? "Unlock code" : "Código"}</b>
+            <div class="mono" style="font-size:34px;font-weight:1000;letter-spacing:6px;margin-top:10px">
+              ${state.unlockCode || "------"}
+            </div>
+            <div class="muted" style="margin-top:10px">${t("expiresIn")} ${remain}s</div>
+          </div>
+          <div class="tile" style="min-width:260px">
+            <b>${state.lang==="en" ? "Actions" : "Acciones"}</b>
+            <div class="filters" style="margin-top:12px">
+              <div class="chip" onclick="go('welcome')">${t("finish")}</div>
+              <button class="btn primary" onclick="startUnlock()">${t("regenerate")}</button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+  }
+
+  function renderRight(){
+    const s=state.selectedStation;
+    const plan=state.plan;
+
+    const selectedHTML = s ? `
+      <div class="tile">
+        <b>${state.lang==="en" ? "Selected" : "Seleccionada"}</b>
+        <div class="big" style="font-size:20px">${escapeHtml(s.name)}</div>
+        <div class="muted">${areaName(s)} · ${s.distance} km</div>
+      </div>
+      <div class="grid2">
+        <div class="tile">
+          <b>${state.lang==="en" ? "Bikes" : "Bicis"}</b>
+          <div class="big">${s.bikes}</div>
+          <div class="muted">${stationStatusLabel(s).txt}</div>
+        </div>
+        <div class="tile">
+          <b>${state.lang==="en" ? "Free docks" : "Anclajes libres"}</b>
+          <div class="big">${s.docks}</div>
+          <div class="muted">${state.lang==="en" ? "Capacity approx" : "Capacidad aprox"}: ${s.bikes+s.docks}</div>
+        </div>
+      </div>
+    ` : `
+      <div class="tile">
+        <b>${t("selectAStation")}</b>
+        <div class="muted">${t("touchAStation")}</div>
+      </div>
+    `;
+
+    const mapPins = computeStations().slice(0,6).map(st=>{
+      const dim = st.bikes===0 ? "dim":"";
+      return `<div class="pin ${dim}" style="left:${st.x}%; top:${st.y}%"></div>`;
+    }).join("");
+
+    rightBody.innerHTML=`
+      <div class="summary">
+        <div class="tile">
+          <b>${t("plan")}</b>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:18px;font-weight:1000">${escapeHtml(planName(plan))}</div>
+              <div class="muted">${escapeHtml(planDesc(plan))}</div>
+            </div>
+            <div class="stat"><span class="k">${t("price")}</span> ${fmtEUR(plan.price)}</div>
+          </div>
+          <div class="divider"></div>
+          <div class="muted">${state.lang==="en" ? "Payment status" : "Estado pago"}: <b style="color:#111">${state.paid ? "✓" : "—"}</b></div>
+        </div>
+
+        ${selectedHTML}
+
+        <div class="tile">
+          <b>${t("mapDemo")}</b>
+          <div class="map">
+            ${mapPins}
+            <div class="map-label">${t("mapNote")}</div>
+          </div>
+        </div>
+
+        <div class="tile">
+          <b>${t("progress")}</b>
+          <div class="muted" style="margin-bottom:10px">${t("screen")}: <b style="color:#111">${state.screen}</b></div>
+          <div class="bar"><div style="width:${progressPct()}%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted)">
+            <span>${state.lang==="en" ? "Start" : "Inicio"}</span><span>${state.lang==="en" ? "End" : "Fin"}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function stationRow(s){
+    const st=stationStatusLabel(s);
+    const cap=s.bikes+s.docks;
+    const bikesPct=pct(s.bikes, cap||1);
+    return `
+      <div class="rowcard" onclick="selectStation(${s.id})">
+        <div class="row-left">
+          <div class="badge">#${s.id}</div>
+          <div class="rowmeta">
+            <b>${escapeHtml(s.name)}</b>
+            <span>${escapeHtml(areaName(s))} · ${s.distance} km</span>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="k">●</span> ${escapeHtml(st.txt)}</div>
+          <div class="stat"><span class="k">${state.lang==="en" ? "Bikes":"Bicis"}</span> ${s.bikes}</div>
+          <div class="stat"><span class="k">${state.lang==="en" ? "Free":"Libre"}</span> ${s.docks}</div>
+          <div class="bar"><div style="width:${bikesPct}%"></div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function chip(key,label){
+    const active=state.filter===key ? "active":"";
+    return `<div class="chip ${active}" onclick="setFilter('${key}')">${escapeHtml(label)}</div>`;
+  }
+  function payMethodChip(key,label){
+    const active=state.payMethod===key ? "active":"";
+    return `<div class="method ${active}" onclick="setPayMethod('${key}')">${escapeHtml(label)}</div>`;
+  }
+
+  // ---------- Navigation ----------
+  function go(screen){
+    state.screen = screen;
+    const isMaint = (screen === "maintenance");
+    applyMaintenanceMode(isMaint);
+    render();
+  }
+
+  function setLang(L){
+    state.lang=L;
+    langRoot.style.display="none";
+    state.screen="welcome";
+    applyMaintenanceMode(false);
+    render();
+  }
+
+  function toggleOnline(){
+    setOnline(!state.online);
+    render();
+  }
+
+  function setQuery(v){ state.query=v; render(); }
+  function setFilter(f){ state.filter=f; render(); }
+
+  function selectStation(id){
+    state.selectedStation = STATIONS.find(x=>x.id===id) || null;
+    state.screen="confirm";
+    render();
+  }
+
+  function selectPlan(id){
+    const p=PLANS.find(x=>x.id===id);
+    if(p) state.plan=p;
+    state.paid=false;
+    state.cardDigits="";
+    render();
+  }
+
+  function setPayMethod(m){ state.payMethod=m; render(); }
+
+  function keyPress(k){
+    if(state.screen!=="pay") return;
+    if(state.payMethod!=="card") return;
+
+    if(k==="del") state.cardDigits = state.cardDigits.slice(0,-1);
+    else if(k==="clr") state.cardDigits="";
+    else if(/^\d$/.test(k) && state.cardDigits.length<16) state.cardDigits+=k;
+    render();
+  }
+
+  function confirmPayment(){
+    if(state.screen!=="pay") return;
+
+    if(!state.online){
+      openModal(t("offlineMode"), t("offlineModeDesc"), `
+        <div class="muted" style="margin-bottom:12px">${state.lang==="en"
+          ? "Turn online to proceed (demo)."
+          : "Activa online para continuar (demo)."}</div>
+        <div class="filters">
+          <button class="btn primary" onclick="toggleOnline(); closeModal();">${t("retryOnline")}</button>
+          <div class="chip" onclick="closeModal()">${t("understood")}</div>
+        </div>
+      `);
+      return;
+    }
+
+    if(state.plan.price>0 && state.payMethod==="card" && state.cardDigits.length!==16){
+      openModal(state.lang==="en" ? "Invalid card":"Tarjeta inválida",
+        state.lang==="en" ? "Enter 16 digits (demo).":"Introduce 16 dígitos (demo).",
+        `<div class="filters"><div class="chip active" onclick="closeModal()">${t("understood")}</div></div>`);
+      return;
+    }
+
+    state.paid=true;
+    openModal(t("paymentOK"), t("paymentOKDesc"), `
+      <div class="muted" style="margin-bottom:12px">${state.lang==="en"
+        ? "Payment is simulated. Continue to stations."
+        : "El pago es simulado. Continúa a estaciones."}</div>
+      <div class="filters">
+        <button class="btn primary" onclick="closeModal(); go('stations')">${t("chooseStation")}</button>
+      </div>
+    `);
+  }
+
+  function startUnlock(){
+    if(!state.paid){
+      openModal(state.lang==="en" ? "Payment required":"Pago requerido",
+        state.lang==="en" ? "Pay before generating a code.":"Paga antes de generar un código.",
+        `<div class="filters">
+           <button class="btn primary" onclick="closeModal(); go('pay')">${t("payTitle")}</button>
+           <div class="chip" onclick="closeModal()">${t("understood")}</div>
+         </div>`);
+      return;
+    }
+    if(!state.selectedStation){
+      openModal(t("missingStation"), t("missingStationDesc"), `
+        <div class="filters">
+          <button class="btn primary" onclick="closeModal(); go('stations')">${t("goStations")}</button>
+        </div>
+      `);
+      return;
+    }
+    if(state.selectedStation.bikes<=0){
+      openModal(t("noBikes"), t("noBikesDesc"), `
+        <div class="filters">
+          <button class="btn primary" onclick="closeModal(); go('stations')">${t("changeStation")}</button>
+        </div>
+      `);
+      return;
+    }
+    if(!state.online){
+      openModal(t("offlineMode"), t("offlineModeDesc"), `
+        <div class="filters">
+          <button class="btn primary" onclick="toggleOnline(); closeModal(); startUnlock()">${t("retryOnline")}</button>
+          <div class="chip" onclick="closeModal()">${t("understood")}</div>
+        </div>
+      `);
+      return;
+    }
+
+    state.unlockCode = genUnlockCode();
+    state.unlockEndsAt = Date.now() + 60_000;
+    state.screen="unlock";
+    render();
+  }
+
+  function resetAll(){
+    state.lang = null;
+    state.screen="welcome";
+    state.plan=PLANS[0];
+    state.paid=false;
+    state.payMethod="card";
+    state.cardDigits="";
+    state.query="";
+    state.filter="all";
+    state.selectedStation=null;
+    state.unlockCode=null;
+    state.unlockEndsAt=null;
+    setOnline(true);
+    applyMaintenanceMode(false);
+    langRoot.style.display="flex";
+    render();
+  }
+
+  // ---------- Wiring ----------
+  document.getElementById("btnHome").addEventListener("click", ()=>go("welcome"));
+  document.getElementById("btnHelp").addEventListener("click", ()=>{
+    openModal(t("help"), state.lang==="en" ? "What is this?":"Qué es esto", `
+      <div class="muted">${state.lang==="en"
+        ? "Kiosk UI demo. Flow: Plans → Pay → Stations → Unlock."
+        : "Demo de kiosko. Flujo: Planes → Pagar → Estaciones → Desbloqueo."}</div>
+      <div style="height:12px"></div>
+      <div class="filters"><div class="chip active" onclick="closeModal()">${state.lang==="en" ? "Close":"Cerrar"}</div></div>
+    `);
+  });
+
+  document.getElementById("btnAdmin").addEventListener("click", openAdminModal);
+  document.getElementById("btnStart").addEventListener("click", ()=>go("plans"));
+  document.getElementById("btnPlan").addEventListener("click", ()=>go("plans"));
+  document.getElementById("btnReset").addEventListener("click", resetAll);
+
+  document.getElementById("btnLang").addEventListener("click", ()=>{
+    if(!state.lang){
+      langRoot.style.display="flex";
+      return;
+    }
+    state.lang = state.lang==="es" ? "en" : "es";
+    render();
+  });
+
+  modalClose.addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", (e)=>{ if(e.target===modalBackdrop) closeModal(); });
+
+  window.addEventListener("keydown", (e)=>{
+    if(e.key==="Escape"){
+      if(langRoot.style.display!=="none") return;
+      if(state.screen==="unlock") go("welcome");
+      else if(state.screen==="confirm") go("stations");
+      else if(state.screen==="stations") go("pay");
+      else if(state.screen==="pay") go("plans");
+      else if(state.screen==="plans") go("welcome");
+    }
+  });
+
+  setInterval(()=>{
+    const d=new Date();
+    if(state.lang){
+      clockEl.textContent=d.toLocaleTimeString(state.lang==="en" ? "en-GB":"es-ES", {hour12:false});
+    }else{
+      clockEl.textContent=d.toLocaleTimeString("es-ES", {hour12:false});
+    }
+
+    if(state.screen==="unlock" && state.unlockEndsAt){
+      if(Date.now()>=state.unlockEndsAt){
+        state.unlockCode=null; state.unlockEndsAt=null;
+        openModal(t("codeExpired"), t("codeExpiredDesc"), `
+          <div class="filters">
+            <button class="btn primary" onclick="closeModal(); startUnlock()">${t("regenerateNow")}</button>
+            <div class="chip" onclick="closeModal(); go('welcome')">${t("finish")}</div>
+          </div>
+        `);
+        state.screen="confirm";
+      }
+      render();
+    }
+  }, 1000);
+
+  // Expose inline handlers
+  window.go=go;
+  window.setLang=setLang;
+  window.toggleOnline=toggleOnline;
+  window.setQuery=setQuery;
+  window.setFilter=setFilter;
+  window.selectStation=selectStation;
+  window.selectPlan=selectPlan;
+  window.setPayMethod=setPayMethod;
+  window.keyPress=keyPress;
+  window.confirmPayment=confirmPayment;
+  window.startUnlock=startUnlock;
+  window.resetAll=resetAll;
+  window.closeModal=closeModal;
+  window.submitAdminPin=submitAdminPin;
+
+  // Initial state
+  setOnline(true);
+  applyMaintenanceMode(false);
+  langRoot.style.display="flex";
+  render();
+</script>
+</body>
+</html>
+
